@@ -8,7 +8,9 @@
 //    halo control and the noise floor set (the chain then runs and sums zero);
 //  • eight draws on half-float targets, with bilinear taps at the fractional
 //    steps a 256-px frame gets, match the CPU model;
-//  • a 96×64 frame matches the model at its own anchoring.
+//  • a 96×64 frame matches the model at its own anchoring;
+//  • a source with channels below black, as a RAW decode keeps colours beyond
+//    the sRGB primaries, stays finite and matches the model, signs included.
 //
 // The timings it prints are SwiftShader (CPU) numbers, only useful relative
 // to each other.
@@ -55,6 +57,28 @@ function scene(w: number, h: number): Image {
   });
 }
 
+/** A RAW decode's colours beyond the sRGB primaries, as channels below black:
+ *  a band with blue under zero, one with green under zero at a Rec. 709 luma
+ *  of about zero, and one whose blue crosses zero along the texture. */
+function signedScene(w: number, h: number): Image {
+  return fill(w, h, (x, y) => {
+    const band = Math.floor((3 * y) / h);
+    const v = 0.2 * 2 ** (0.4 * Math.sin((2 * Math.PI * x) / 16) + 0.3 * Math.sin((2 * Math.PI * y) / 24));
+    if (band === 0) return [1.3 * v, v, -0.25 * v];
+    if (band === 1) return [v, -0.3 * v, 0.03 * v];
+    return [0.5 * v, 0.4 * v, 0.1 * Math.sin((2 * Math.PI * x) / 32)];
+  });
+}
+
+/** The probe handing the working colour back negated, so channels below black
+ *  survive the display clamp; the probe itself keeps those at or above it. */
+const NEGATED_PROBE_PIPELINE = {
+  ...LINEAR_PROBE_PIPELINE,
+  id: "plc.negated-probe",
+  glsl: "vec3 pipelineToDisplay(vec3 lin) { return -lin; }",
+  sig: "plc.negated-probe",
+};
+
 /** float32 → binary16 → float32, round to nearest even: the source upload is
  *  RGBA16F, so this is the value the GPU actually receives. */
 function f16round(v: number): number {
@@ -93,11 +117,18 @@ interface Comparison {
   worst: string;
 }
 
-// Beyond these the probe pipeline's knee and clamp make a sample incomparable.
+// Beyond these the probe pipeline's knee and clamp make a sample incomparable;
+// a signed frame (the probe less the negated probe) is bounded at −CLIP_HI.
 const CLIP_LO = 0.002;
 const CLIP_HI = 0.8;
 
-function compare(on: Frame, off: Frame, ref: { input: Float64Array; output: Float64Array }, w: number): Comparison {
+function compare(
+  on: Frame,
+  off: Frame,
+  ref: { input: Float64Array; output: Float64Array },
+  w: number,
+  lo = CLIP_LO,
+): Comparison {
   const n = on.width * on.height;
   let se = 0;
   let change = 0;
@@ -108,7 +139,7 @@ function compare(on: Frame, off: Frame, ref: { input: Float64Array; output: Floa
   let worst = "";
   for (let p = 0; p < n; p++) {
     const out = [ref.output[p * 3], ref.output[p * 3 + 1], ref.output[p * 3 + 2]];
-    if (out.some((v) => v < CLIP_LO || v > CLIP_HI)) {
+    if (out.some((v) => v < lo || v > CLIP_HI)) {
       clipped++;
       continue;
     }
@@ -134,6 +165,11 @@ function compare(on: Frame, off: Frame, ref: { input: Float64Array; output: Floa
     outliers,
     worst,
   };
+}
+
+/** The working colour, signed, from the probe and the negated probe. */
+function signedFrame(probe: Frame, negated: Frame): Frame {
+  return { ...probe, data: probe.data.map((v, i) => v - negated.data[i]) };
 }
 
 function expectBitExact(a: Frame | null, b: Frame | null): void {
@@ -239,6 +275,42 @@ describe("Pyramid Local Contrast stage on the real renderer", () => {
         `(${((100 * s.rmse) / s.changeRms).toFixed(2)}%), max ${s.max.toExponential(2)}, ${s.outliers} outliers; worst ${s.worst}`,
     );
     expect(s.changeRms).toBeGreaterThan(1e-3);
+    expect(s.outliers).toBe(0);
+    expect(s.rmse).toBeLessThan(Math.max(s.changeRms * MAX_ERROR_FRACTION, MAX_ERROR_FLOOR));
+  });
+
+  // The prepass reads the source straight, so a RAW colour beyond the
+  // primaries reaches the norm and the log with a channel below black.
+  it("matches the model on channels below black, finite throughout", () => {
+    const signed = signedScene(W, H);
+    const image = toFloatImage(signed);
+    const [probe, negated] = [LINEAR_PROBE_PIPELINE, NEGATED_PROBE_PIPELINE].map((pipeline) =>
+      withRenderer({ stages: [...builtinStages(), ...allStages()], pipeline }, (renderer) => {
+        renderer.setImage(image);
+        renderer.setParams(identityParams());
+        renderer.setContributedParams(deriveAll(DEFAULT_PARAMS));
+        const off = renderer.captureFloatFrame();
+        renderer.setContributedParams(deriveAll(COARSE));
+        const on = renderer.captureFloatFrame();
+        return { off, on };
+      }),
+    );
+    for (const frame of [probe.off, probe.on, negated.off, negated.on]) {
+      expect(frame).not.toBeNull();
+      expect(frame!.data.every((v) => Number.isFinite(v))).toBe(true);
+    }
+    const ref = reference(signed, COARSE);
+    let below = 0;
+    for (let i = 0; i < ref.input.length; i++) if (ref.input[i] < 0 && Math.abs(ref.output[i] - ref.input[i]) > 1e-3) below++;
+    const s = compare(signedFrame(probe.on!, negated.on!), signedFrame(probe.off!, negated.off!), ref, W, -CLIP_HI);
+    console.log(
+      `[plc-gpu] signed: ${below} changed channels below black; change rms ${s.changeRms.toExponential(2)}; ` +
+        `error rms ${s.rmse.toExponential(2)} (${((100 * s.rmse) / s.changeRms).toFixed(2)}%), ` +
+        `max ${s.max.toExponential(2)}, ${s.outliers} outliers, ${(100 * s.clipped).toFixed(2)}% clipped; worst ${s.worst}`,
+    );
+    expect(below).toBeGreaterThan(W * H * 0.1);
+    expect(s.changeRms).toBeGreaterThan(1e-3);
+    expect(s.clipped).toBeLessThan(0.1);
     expect(s.outliers).toBe(0);
     expect(s.rmse).toBeLessThan(Math.max(s.changeRms * MAX_ERROR_FRACTION, MAX_ERROR_FLOOR));
   });

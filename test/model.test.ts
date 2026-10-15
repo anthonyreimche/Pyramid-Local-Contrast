@@ -44,6 +44,8 @@ describe("point functions", () => {
     expect(luminance(0.3, 0.3, 0.3)).toBeCloseTo(0.3, 12);
     expect(luminance(0, 0, 1)).toBeCloseTo(1 / Math.sqrt(3), 12);
     expect(luminance(0, 0, 0)).toBe(0);
+    // A channel below black (a RAW colour beyond the primaries) counts by its magnitude.
+    expect(luminance(0.3, -0.3, 0.3)).toBeCloseTo(0.3, 12);
   });
 
   it("logs with the floor and the epsilon, finite at black", () => {
@@ -136,6 +138,27 @@ describe("pyramid", () => {
       expect(out[i] / out[i + 1]).toBeCloseTo(2, 10);
       expect(out[i + 2] / out[i + 1]).toBeCloseTo(0.5, 10);
     }
+  });
+
+  // A RAW decode keeps colours beyond the sRGB primaries as channels below
+  // black, some at a Rec. 709 luma of about zero. The norm levels them by
+  // their magnitude and the multiplier is positive, so each keeps its sign.
+  it("keeps channels below black finite and signed under the one multiplier", () => {
+    const img = fill(W, H, (x) => {
+      const v = 0.2 * 2 ** (0.5 * Math.sin((2 * Math.PI * x) / 24));
+      return x % 48 < 24 ? [1.3 * v, v, -0.25 * v] : [v, -0.3 * v, 0.03 * v];
+    });
+    const out = applyLocalContrast(img, { scales: scaleGains([1, 100], [4, -100], [6, 100]), halo: 20, noiseFloor: 0 });
+    let changed = 0;
+    for (let i = 0; i < out.length; i += 3) {
+      const m = out[i] / img.data[i];
+      expect(Number.isFinite(m)).toBe(true);
+      expect(m).toBeGreaterThan(0);
+      expect(out[i + 1] / img.data[i + 1]).toBeCloseTo(m, 10);
+      expect(out[i + 2] / img.data[i + 2]).toBeCloseTo(m, 10);
+      if (Math.abs(m - 1) > 0.05) changed++;
+    }
+    expect(changed).toBeGreaterThan(W);
   });
 
   it("answers a 4 px texture on scale 1 and not on scale 8", () => {
