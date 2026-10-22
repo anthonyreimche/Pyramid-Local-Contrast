@@ -6,7 +6,6 @@
   "author": "Anthony Reimche",
   "main": "dist/index.js",
   "license": "MIT",
-  "categories": ["Develop", "Detail"],
   "keywords": ["local-contrast", "clarity", "texture", "pyramid", "wavelet", "detail", "scene-referred", "halo", "gimp"],
   "minAppVersion": "2.5.5"
 }
