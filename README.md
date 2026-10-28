@@ -23,6 +23,12 @@ and the effect does not move with exposure.
 - **Noise floor** (0…5 % of white). Added to the luminance before the log, it
   compresses detail below its level, so fine-scale boosts stop amplifying
   shadow noise.
+- **In masks:** add Pyramid Local Contrast to a mask from the Masking panel's
+  Adjust tab to run a second set of scales inside that mask only, with its own
+  halo control and noise floor. The mask's panel has every slider the dock's
+  has. It needs the current processing: on a photo edited in an earlier
+  Safelight, use Update processing first. Each mask that uses it runs its own
+  eight draws, so many such masks take a moment longer to show.
 - **Reset** from the panel's dock header menu.
 
 Settings persist per photo, take part in undo and presets, and render
@@ -83,7 +89,9 @@ real GLSL, the slider table, and the activation contract.
 (headless Chromium on SwiftShader): the pass and the inline compile, zero
 scales are a bit-exact no-op, and on a 256² scene of a step edge, sines and a
 colour cast the render matches the CPU model for five parameter sets to under
-2 % of the change with no sample off by more than 0.01, then again at 96×64.
+2 % of the change with no sample off by more than 0.01, then again at 96×64;
+a mask over the right half runs its own chain there and leaves the left half
+bit-identical.
 It needs the SafeLight repository beside this one (or `SAFELIGHT_CORE=<path>`)
 with its dev dependencies installed.
 
@@ -92,7 +100,7 @@ with its dev dependencies installed.
 Install from the SafeLight **Extensions** window, or load this folder via
 Developer Tools ▸ Extensions during development. A **Pyramid Local Contrast**
 panel appears in Develop (right dock). Build from source with `npm install &&
-npm run build` (outputs `dist/index.js`). Needs SafeLight 2.5.5 or later.
+npm run build` (outputs `dist/index.js`). Needs SafeLight 3.1.0 or later.
 
 ## License & credits
 

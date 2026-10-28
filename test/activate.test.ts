@@ -6,32 +6,10 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { activate, deactivate } from "../src/index";
 import { DEFAULT_PARAMS } from "../src/model";
+import { PyramidPanel } from "../src/Panel";
 import { KEY, STAGE_ID, deriveAll } from "../src/params";
-import type {
-  DevelopStoreState,
-  PanelContribution,
-  ProcessingStageContribution,
-  SafelightAPI,
-  StoreApi,
-} from "../src/safelight";
-
-function fakeStore<T extends object>(init: T): StoreApi<T> {
-  let state = init;
-  const listeners = new Set<(s: T, prev: T) => void>();
-  const set = (partial: Partial<T> | ((s: T) => Partial<T>)) => {
-    const prev = state;
-    state = { ...state, ...(typeof partial === "function" ? partial(state) : partial) };
-    for (const l of listeners) l(state, prev);
-  };
-  const hook = ((selector?: (s: T) => unknown) => (selector ? selector(state) : state)) as StoreApi<T>;
-  hook.getState = () => state;
-  hook.setState = set;
-  hook.subscribe = (l) => {
-    listeners.add(l);
-    return () => listeners.delete(l);
-  };
-  return hook;
-}
+import type { DevelopStoreState, PanelContribution, ProcessingStageContribution, SafelightAPI } from "../src/safelight";
+import { fakeStore } from "./support/fake-store";
 
 interface Registered {
   stages: ProcessingStageContribution[];
@@ -76,6 +54,13 @@ describe("activate", () => {
     expect(registered.panels[0].title).toBe("Pyramid Local Contrast");
     expect(registered.panels[0].defaultDock).toEqual({ module: "develop", direction: "right", order: 7, width: 268 });
     expect(typeof registered.panels[0].onReset).toBe("function");
+  });
+
+  it("offers the panel in masks, owning every key it writes", () => {
+    const { api, registered } = fakeApi();
+    activate(api);
+    expect(registered.panels[0].mask?.component).toBe(PyramidPanel);
+    expect([...(registered.panels[0].mask?.owns ?? [])].sort()).toEqual(Object.keys(deriveAll(DEFAULT_PARAMS)).sort());
   });
 
   it("resets the photo's scales to zero from the dock header, in one commit", () => {

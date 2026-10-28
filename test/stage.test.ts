@@ -25,6 +25,10 @@ describe("pyramidStage", () => {
   const stage = pyramidStage();
   const pass = pyramidPass();
 
+  it("runs again inside masks", () => {
+    expect(stage.mask).toEqual({ maskable: true });
+  });
+
   it("is one scene-linear stage before the colour ports, in presets, with one eight-draw pass", () => {
     expect(stage.id).toBe(STAGE_ID);
     expect(stage.name).toBe("Pyramid Local Contrast");

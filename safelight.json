@@ -1,11 +1,11 @@
 {
   "id": "pyramid-local-contrast",
   "name": "Pyramid Local Contrast",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Local contrast by detail scale: eight scales of an edge-aware log-luminance pyramid, each with its own boost or smooth slider, applied as a colour-preserving, exposure-independent multiplier. Halo control and a shadow noise floor.",
   "author": "Anthony Reimche",
   "main": "dist/index.js",
   "license": "MIT",
   "keywords": ["local-contrast", "clarity", "texture", "pyramid", "wavelet", "detail", "scene-referred", "halo", "gimp"],
-  "minAppVersion": "2.5.5"
+  "minAppVersion": "3.1.0"
 }

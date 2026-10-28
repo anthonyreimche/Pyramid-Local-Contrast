@@ -1,6 +1,10 @@
 // The Develop panel: the eight scale sliders, a one-line hint, then halo
 // control and the noise floor — core sliders only. Sliders write the bag live
 // and commit on release with their own label.
+//
+// It edits whatever useParamScope hands it: the photo's bag in the dock, a
+// mask's in the Masking panel's Adjust tab. Nothing here measures the photo,
+// so a mask's panel has every slider.
 
 import type { CSSProperties } from "react";
 import { DEFAULT_PARAMS, SCALES, type Params } from "./model";
@@ -50,13 +54,12 @@ const COLUMN: CSSProperties = { display: "flex", flexDirection: "column", gap: 1
 export function PyramidPanel() {
   const { Slider } = api().components;
   const { Stack, tokens } = api().ui;
-  const dev = api().stores.useDevelopStore;
-  const paramBag = dev((s) => s.paramBag);
-  const p = readParams(paramBag);
+  const scope = api().develop.useParamScope();
+  const p = readParams(scope.getParams());
 
-  const live = (): Params => readParams(dev.getState().paramBag);
-  const apply = (next: Params) => dev.getState().setDynParams(deriveAll(next));
-  const commit = (what: string) => void dev.getState().commitEdit(`Pyramid Local Contrast ${what}`);
+  const live = (): Params => readParams(scope.getParams());
+  const apply = (next: Params) => scope.setParams(deriveAll(next));
+  const commit = (what: string) => scope.commit(`Pyramid Local Contrast ${what}`);
 
   const slider = (spec: SliderSpec) =>
     h(Slider, {

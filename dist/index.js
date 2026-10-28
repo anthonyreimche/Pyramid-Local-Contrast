@@ -50,47 +50,55 @@ var f = {
 		step: .01
 	}
 };
-function p(e, t, n, r) {
+function p() {
+	return [
+		...l.map((e, t) => d(t)),
+		u.halo,
+		u.noiseFloor,
+		u.on
+	];
+}
+function m(e, t, n, r) {
 	let i = e[t];
 	return typeof i != "number" || !Number.isFinite(i) ? r : i < n.min ? n.min : i > n.max ? n.max : i;
 }
-function m(e) {
+function h(e) {
 	return {
-		scales: l.map((t, n) => p(e, d(n), f.scale, r.scales[n])),
-		halo: p(e, u.halo, f.halo, r.halo),
-		noiseFloor: p(e, u.noiseFloor, f.noiseFloor, r.noiseFloor)
+		scales: l.map((t, n) => m(e, d(n), f.scale, r.scales[n])),
+		halo: m(e, u.halo, f.halo, r.halo),
+		noiseFloor: m(e, u.noiseFloor, f.noiseFloor, r.noiseFloor)
 	};
 }
-function h(e) {
+function g(e) {
 	let t = {};
 	return l.forEach((n, r) => {
 		t[d(r)] = e.scales[r];
 	}), t[u.halo] = e.halo, t[u.noiseFloor] = e.noiseFloor, t[u.on] = +!!i(e), t;
 }
-function g() {
-	return h(r);
+function _() {
+	return g(r);
 }
-function _(e) {
+function v(e) {
 	if (!l.some((t, n) => d(n) in e)) return null;
-	let t = h(m(e));
+	let t = g(h(e));
 	return e[u.on] === t[u.on] ? null : t;
 }
 //#endregion
 //#region src/runtime.ts
-var v = null;
-function y(e) {
-	v = e;
+var y = null;
+function b(e) {
+	y = e;
 }
-function b() {
-	if (!v) throw Error("[pyramid-local-contrast] api() called before activate()");
-	return v;
+function x() {
+	if (!y) throw Error("[pyramid-local-contrast] api() called before activate()");
+	return y;
 }
-function x(e, t, ...n) {
-	return b().react.createElement(e, t, ...n);
+function S(e, t, ...n) {
+	return x().react.createElement(e, t, ...n);
 }
 //#endregion
 //#region src/Panel.ts
-var S = Array.from({ length: 8 }, (e, t) => ({
+var C = Array.from({ length: 8 }, (e, t) => ({
 	label: `Scale ${t + 1}`,
 	...f.scale,
 	read: (e) => e.scales[t],
@@ -99,7 +107,7 @@ var S = Array.from({ length: 8 }, (e, t) => ({
 		scales: e.scales.map((e, r) => r === t ? n : e)
 	}),
 	commitLabel: `scale ${t + 1}`
-})), C = [{
+})), w = [{
 	label: "Halo control",
 	...f.halo,
 	read: (e) => e.halo,
@@ -117,13 +125,13 @@ var S = Array.from({ length: 8 }, (e, t) => ({
 		noiseFloor: t
 	}),
 	commitLabel: "noise floor"
-}], w = "Scale 1 is the finest texture, scale 8 the broadest local tone; each scale is twice the size of the last. Up boosts, down smooths.", T = {
+}], T = "Scale 1 is the finest texture, scale 8 the broadest local tone; each scale is twice the size of the last. Up boosts, down smooths.", E = {
 	display: "flex",
 	flexDirection: "column",
 	gap: 1
 };
-function E() {
-	let { Slider: e } = b().components, { Stack: t, tokens: n } = b().ui, i = b().stores.useDevelopStore, a = m(i((e) => e.paramBag)), o = () => m(i.getState().paramBag), s = (e) => i.getState().setDynParams(h(e)), c = (e) => void i.getState().commitEdit(`Pyramid Local Contrast ${e}`), l = (t) => x(e, {
+function D() {
+	let { Slider: e } = x().components, { Stack: t, tokens: n } = x().ui, i = x().develop.useParamScope(), a = h(i.getParams()), o = () => h(i.getParams()), s = (e) => i.setParams(g(e)), c = (e) => i.commit(`Pyramid Local Contrast ${e}`), l = (t) => S(e, {
 		key: t.label,
 		label: t.label,
 		value: t.read(a),
@@ -139,23 +147,23 @@ function E() {
 		lineHeight: 1.4,
 		color: n.textMuted
 	};
-	return x(t, {
+	return S(t, {
 		gap: 6,
 		style: { padding: "6px 8px 8px" }
-	}, x("div", {
+	}, S("div", {
 		key: "scales",
-		style: T
-	}, ...S.map(l)), x("p", {
+		style: E
+	}, ...C.map(l)), S("p", {
 		key: "hint",
 		style: u
-	}, w), x("div", {
+	}, T), S("div", {
 		key: "options",
-		style: T
-	}, ...C.map(l)));
+		style: E
+	}, ...w.map(l)));
 }
 //#endregion
 //#region src/glsl.ts
-function D(e) {
+function O(e) {
 	let t = e.toPrecision(10);
 	if (/e/i.test(t)) {
 		let [e, n] = t.split(/e/i);
@@ -163,17 +171,17 @@ function D(e) {
 	}
 	return t.includes(".") ? t : `${t}.0`;
 }
-var O = D, k = l.slice(0, -1).reduceRight((e, t, n) => `(k == ${n} ? ${t} : ${e})`, l[7]), A = `
-float plcB3(int d) { d = d < 0 ? -d : d; return d == 0 ? ${O(t[2])} : (d == 1 ? ${O(t[1])} : ${O(t[0])}); }
-float plcLog(float n) { return log2(max(n, 0.0) + noiseFloor * 0.01 + ${O(n)}); }
+var k = O, A = l.slice(0, -1).reduceRight((e, t, n) => `(k == ${n} ? ${t} : ${e})`, l[7]), j = `
+float plcB3(int d) { d = d < 0 ? -d : d; return d == 0 ? ${k(t[2])} : (d == 1 ? ${k(t[1])} : ${k(t[0])}); }
+float plcLog(float n) { return log2(max(n, 0.0) + noiseFloor * 0.01 + ${k(n)}); }
 vec3 plcStateOf(vec3 p) { return uPrevRaw ? vec3(sqrt(dot(p, p) / 3.0), 0.0, 0.0) : p; }
 vec3 plcState(vec2 uv) { return plcStateOf(readPrev(uv)); }
 float plcLevel(vec3 st) { return plcLog(st.x) + st.y; }
-float plcGain(int k) { return ${k}; }
-`, j = `
+float plcGain(int k) { return ${A}; }
+`, M = `
 {
   float longEdge = max(1.0 / uTexel.x, 1.0 / uTexel.y);
-  float s = exp2(float(uPassIndex)) * longEdge / ${O(e)};
+  float s = exp2(float(uPassIndex)) * longEdge / ${k(e)};
   float sigma = exp2(-halo / 50.0);
   vec3 st = plcStateOf(c);
   float Lc = plcLevel(st);
@@ -189,20 +197,20 @@ float plcGain(int k) { return ${k}; }
     }
   }
   float coarse = sum / wsum;
-  float d = clamp(Lc - coarse, ${O(-5)}, ${O(5)});
+  float d = clamp(Lc - coarse, ${k(-5)}, ${k(5)});
   float acc = st.z + plcGain(uPassIndex) * 0.01 * d;
   c = uPassIndex == uPassCount - 1 ? vec3(acc, 0.0, 0.0) : vec3(st.x, coarse - plcLog(st.x), acc);
 }
-`, M = `
+`, N = `
 {
   if (on > 0.5) {
-    lin *= exp2(clamp(stageResult.x, ${O(-8)}, ${O(8)}));
+    lin *= exp2(clamp(stageResult.x, ${k(-8)}, ${k(8)}));
   }
 }
 `;
 //#endregion
 //#region src/stage.ts
-function N() {
+function P() {
 	return [
 		...l.map((e, t) => ({
 			key: e,
@@ -227,68 +235,73 @@ function N() {
 		}
 	];
 }
-function P() {
+function F() {
 	return {
-		glsl: j,
-		helpers: A,
+		glsl: M,
+		helpers: j,
 		iterations: 8,
-		uniforms: N()
+		uniforms: P()
 	};
 }
-function F() {
+function I() {
 	return {
 		id: c,
 		name: "Pyramid Local Contrast",
 		phase: "scene-linear",
 		priority: 60,
-		glsl: M,
+		glsl: N,
 		uniforms: [{
 			key: "on",
 			glslType: "float",
 			default: 0
 		}],
-		passes: [P()],
-		presetScope: "global"
+		passes: [F()],
+		presetScope: "global",
+		mask: { maskable: !0 }
 	};
 }
-function I() {
-	return [F()];
+function L() {
+	return [I()];
 }
 //#endregion
 //#region src/index.ts
-var L = `${a}.panel`, R = null;
-function z() {
-	let e = b().stores.useDevelopStore.getState();
-	e.setDynParams(g()), e.commitEdit("Pyramid Local Contrast reset");
+var R = `${a}.panel`, z = null;
+function B() {
+	let e = x().stores.useDevelopStore.getState();
+	e.setDynParams(_()), e.commitEdit("Pyramid Local Contrast reset");
 }
-function B(e) {
-	y(e);
-	for (let t of I()) e.registerProcessingStage(t);
+function V(e) {
+	b(e);
+	for (let t of L()) e.registerProcessingStage(t);
 	e.registerPanel({
-		id: L,
+		id: R,
 		title: "Pyramid Local Contrast",
-		component: E,
+		component: D,
 		defaultDock: {
 			module: "develop",
 			direction: "right",
 			order: 7,
 			width: 268
 		},
-		onReset: z
-	}), R = e.stores.useDevelopStore.subscribe((e, t) => {
+		onReset: B,
+		mask: {
+			component: D,
+			owns: p()
+		}
+	}), z = e.stores.useDevelopStore.subscribe((e, t) => {
 		if (e.paramBag === t.paramBag) return;
-		let n = _(e.paramBag);
+		let n = v(e.paramBag);
 		n && e.setDynParams(n);
 	});
 }
-function V() {
-	R?.(), R = null;
+function H() {
+	z?.(), z = null;
 	try {
-		let e = b();
-		for (let t of I()) e.unregisterProcessingStage(t.id);
+		let e = x();
+		for (let t of L()) e.unregisterProcessingStage(t.id);
 	} catch {}
 }
 //#endregion
-export { B as activate, V as deactivate };
+export { V as activate, H as deactivate };
 
 //# sourceMappingURL=index.js.map

@@ -59,6 +59,10 @@ export interface ProcessingStageContribution {
   uniforms: UniformDeclaration[];
   passes?: StagePass[];
   presetScope?: "global" | "per-image";
+  /** Runs the stage again inside each mask whose bag holds its keys, with that
+   *  mask's values, blended by its coverage (Safelight 3.1.0, process version 2
+   *  photos). */
+  mask?: { maskable: true };
 }
 
 export interface PanelContribution {
@@ -73,6 +77,21 @@ export interface PanelContribution {
     height?: number;
   };
   onReset?: () => void;
+  /** Offers the panel in a mask's Adjust tab: each mask that adds it renders
+   *  `component`, which edits that mask's values through useParamScope. `owns`
+   *  lists every qualified key it writes, seeded on add and cleared on remove. */
+  mask?: { component: ComponentType; order?: number; owns: readonly string[] };
+}
+
+/** The params a panel edits: the photo's bag, or one mask's (maskId set).
+ *  Reads see the store as it is now, not as the render was handed it. */
+export interface ParamScope {
+  maskId: string | null;
+  getParam(key: string): unknown;
+  /** The stored values by qualified key, without defaults. */
+  getParams(): Readonly<Record<string, unknown>>;
+  setParams(patch: Record<string, unknown>): void;
+  commit(label: string): void;
 }
 
 export interface SliderProps {
@@ -118,6 +137,10 @@ export interface SafelightAPI {
   ui: UiKit;
   stores: {
     useDevelopStore: StoreApi<DevelopStoreState>;
+  };
+  develop: {
+    /** The mask's scope inside a mask's Adjust tab, the photo's anywhere else. */
+    useParamScope(): ParamScope;
   };
 }
 

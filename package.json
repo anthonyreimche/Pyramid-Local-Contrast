@@ -1,7 +1,7 @@
 {
   "name": "safelight-pyramid-local-contrast",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Pyramid Local Contrast extension for Safelight — eight detail scales of an edge-aware log-luminance pyramid, each with its own boost or smooth slider.",
   "type": "module",
   "scripts": {

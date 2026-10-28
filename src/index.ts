@@ -5,7 +5,7 @@
 // one scene-linear GPU stage (stage.ts) and the Develop panel (Panel.ts).
 
 import { PyramidPanel } from "./Panel";
-import { EXT_ID, rederivePatch, resetPatch } from "./params";
+import { EXT_ID, allKeys, rederivePatch, resetPatch } from "./params";
 import { api, initRuntime } from "./runtime";
 import type { DevelopStoreState, SafelightAPI } from "./safelight";
 import { allStages } from "./stage";
@@ -33,6 +33,8 @@ export function activate(host: SafelightAPI): void {
     component: PyramidPanel,
     defaultDock: { module: "develop", direction: "right", order: 7, width: 268 },
     onReset: reset,
+    // The same panel edits a mask's scales in the Masking panel's Adjust tab.
+    mask: { component: PyramidPanel, owns: allKeys() },
   });
 
   // A bag whose gate disagrees with its scales (a preset that carried only

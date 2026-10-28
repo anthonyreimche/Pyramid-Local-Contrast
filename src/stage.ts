@@ -38,6 +38,9 @@ export function pyramidStage(): ProcessingStageContribution {
     uniforms: [{ key: "on", glslType: "float", default: 0 }],
     passes: [pyramidPass()],
     presetScope: "global",
+    // A mask's copy runs its own eight draws with the mask's scales; its keys
+    // are zero until they move, so an untouched mask is skipped like the photo.
+    mask: { maskable: true },
   };
 }
 
