@@ -46,7 +46,7 @@ nothing.
   level blurred by the 5×5 `[1 4 6 4 1]/16` kernel dilated by `2^k` steps, and
   the detail of scale *k* is the difference. Taps are weighted by
   `exp(−½ (ΔL/σ)²)` with σ from halo control (1 EV at rest, 0.25 at +100, 4 at
-  −100) and normalised, so the blur never crosses an edge much steeper than σ.
+  −100) and normalized, so the blur never crosses an edge much steeper than σ.
   Each detail is clamped to ±5 EV.
 - **Correction.** `Σ gain_k · detail_k`, clamped to ±8 EV, applied as
   `RGB · 2^correction`.
@@ -102,7 +102,7 @@ Developer Tools ▸ Extensions during development. A **Pyramid Local Contrast**
 panel appears in Develop (right dock). Build from source with `npm install &&
 npm run build` (outputs `dist/index.js`). Needs SafeLight 3.1.0 or later.
 
-## License & credits
+## Licence & credits
 
 **MIT.** An original implementation from textbook parts: the Laplacian pyramid
 (Burt & Adelson, 1983) in its undecimated B3-spline form (Starck, Murtagh &
