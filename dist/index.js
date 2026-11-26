@@ -283,6 +283,7 @@ function V(e) {
 			order: 7,
 			width: 268
 		},
+		modules: ["develop"],
 		onReset: B,
 		mask: {
 			component: D,

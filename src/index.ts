@@ -32,6 +32,7 @@ export function activate(host: SafelightAPI): void {
     title: "Pyramid Local Contrast",
     component: PyramidPanel,
     defaultDock: { module: "develop", direction: "right", order: 7, width: 268 },
+    modules: ["develop"],
     onReset: reset,
     // The same panel edits a mask's scales in the Masking panel's Adjust tab.
     mask: { component: PyramidPanel, owns: allKeys() },
